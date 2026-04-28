@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professional Invoice System</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#eef2f7;padding:30px}
+.container{max-width:1000px;margin:auto}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+h1{font-size:32px;color:#111827;margin-bottom:8px}
+h2{font-size:20px;margin-bottom:16px;color:#111827}
+p.top-text{color:#6b7280;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px}
+button{border:none;border-radius:10px;padding:12px 18px;cursor:pointer;font-weight:600}
+.add-btn{background:#111827;color:#fff;margin-top:15px}
+.print-btn{background:#2563eb;color:#fff;margin-top:20px}
+.delete-btn{background:#ef4444;color:#fff;padding:8px 12px}
+.item-row{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 1fr auto;gap:12px;align-items:center;margin-top:12px;padding:10px;border-bottom:1px solid #eee}
+.preview-table-head{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 1fr 2fr;gap:12px;font-weight:700;border-bottom:1px solid #ddd;padding-bottom:10px;margin-top:15px}
+.preview-item{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 1fr 2fr;gap:12px;padding:8px 0;border-bottom:1px solid #f1f1f1}
+.total-box{text-align:right;line-height:2}
+.signature{display:flex;justify-content:space-between;gap:40px;margin-top:50px}
+.signature div{text-align:center;flex:1}
+.line{border-top:1px solid #000;padding-top:8px;margin-top:40px}
+
+@media print{
+  body *{visibility:hidden}
+  #invoicePreview,#invoicePreview *{visibility:visible}
+  #invoicePreview{position:absolute;left:0;top:0;width:100%;background:#fff;padding:20px;border:none;box-shadow:none}
+  button{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Professional Invoice System</h1>
+<p class="top-text">Enter data above and only Invoice Preview will be printed.</p>
+
+<div class="card">
+<h2>Invoice Creator Details</h2>
+<div class="grid">
+<div>
+<label>Personal Name</label>
+<input type="text" id="customerName" placeholder="Enter your name">
+</div>
+<div>
+<label>Contact Number</label>
+<input type="text" id="customerPhone" placeholder="Enter your phone number">
+</div>
+<div>
+<label>Position / Post</label>
+<input type="text" id="customerPost" placeholder="Enter your post">
+</div>
+<div>
+<label>Invoice No</label>
+<input type="text" id="invoiceNo" placeholder="Enter invoice number" value="INV-1001">
+</div>
+<div>
+<label>Invoice Ready Date</label>
+<input type="date" id="invoiceDate">
+</div>
+
+</div>
+</div>
+
+<div class="card">
+<h2>Product Entry</h2>
+<div class="grid">
+<div>
+<label>Product Date</label>
+<input type="date" id="itemDate">
+</div>
+<div>
+<label>Product Name</label>
+<input type="text" id="itemName" placeholder="Product name">
+</div>
+<div>
+<label>Quantity</label>
+<input type="number" id="itemQty" value="1">
+</div>
+<div>
+<label>Price</label>
+<input type="number" id="itemPrice" value="0">
+</div>
+<div>
+<label>Remark</label>
+<input type="text" id="itemRemark" placeholder="Write remark">
+</div>
+</div>
+<button class="add-btn" onclick="addItem()">+ Add Item</button>
+<div id="itemsContainer"></div>
+</div>
+
+<div class="card">
+<h2>Invoice Preview</h2>
+<div id="invoicePreview">
+<div style="margin-bottom:25px; line-height:1.8; border-bottom:1px solid #ddd; padding-bottom:15px;">
+  <h2 id="companyNamePreview" style="margin-bottom:3px; font-size:24px;">ACURE Agro Food & Nutrition</h2>
+  <p id="companyAddressPreview">West Rampura, Dhaka-1219</p>
+  <p id="companyPhonePreview"> 01897985500 </p>
+</div>
+<h3 id="previewCustomer">Invoice Created By: </h3>
+<p id="previewPhone">Contact Number: </p>
+<p id="previewPost">Position: </p>
+<p id="previewInvoice">Invoice No: </p>
+<p id="previewReadyDate">Invoice Date: </p>
+
+
+<div class="preview-table-head">
+<div>Date</div>
+<div>Name</div>
+<div>Qty</div>
+<div>Price</div>
+<div>Total</div>
+<div>Remark</div>
+</div>
+<div id="previewItems"></div>
+
+<div style="margin-top:20px;border-top:1px solid #ddd;padding-top:15px" class="total-box">
+<p id="previewSubtotal">Subtotal: 0.00</p>
+<p id="previewPaid">Paid: 0.00</p>
+<p id="previewDue">Due: 0.00</p>
+<h3 id="previewGrandTotal">Grand Total: 0.00</h3>
+</div>
+
+<div class="signature">
+<div><div class="line">Coordinator Signature</div></div>
+<div><div class="line">HR Admin Signature</div></div>
+</div>
+</div>
+
+<button class="print-btn" onclick="window.print()">Print Invoice PDF</button>
+</div>
+</div>
+
+<script>
+function updatePreview(){
+const creatorName=document.getElementById('customerName')?.value||'-';
+const creatorPhone=document.getElementById('customerPhone')?.value||'-';
+const creatorPost=document.getElementById('customerPost')?.value||'-';
+
+document.getElementById('previewCustomer').innerText='Invoice Created By: '+creatorName;
+document.getElementById('previewPhone').innerText='Contact Number: '+creatorPhone;
+document.getElementById('previewPost').innerText='Position: '+creatorPost;
+document.getElementById('previewInvoice').innerText='Invoice No: '+(document.getElementById('invoiceNo')?.value||'INV-1001');
+document.getElementById('previewReadyDate').innerText='Invoice Date: '+(document.getElementById('invoiceDate')?.value||'-');
+
+document.getElementById('companyNamePreview').innerText=(document.getElementById('companyName').value||'Your Company');
+document.getElementById('companyPhonePreview').innerText=(document.getElementById('companyPhone').value||'01234 456 789');
+document.getElementById('companyAddressPreview').innerText=(document.getElementById('companyAddress').value||'123 Your Street');
+document.getElementById('companyCityPreview').innerText=(document.getElementById('companyCity').value||'Your City, AB12 3BC');
+document.getElementById('previewCustomer').innerText='Invoice Created By: '+(document.getElementById('customerName').value||'-');
+document.getElementById('previewPhone').innerText='Contact Number: '+(document.getElementById('customerPhone').value||'-');
+document.getElementById('previewPost').innerText='Position: '+(document.getElementById('customerPost').value||'-');
+document.getElementById('previewAddress').innerText='Address: '+(document.getElementById('customerAddress').value||'-');
+document.getElementById('previewInvoice').innerText='Invoice No: '+(document.getElementById('invoiceNo').value||'INV-1001');
+document.getElementById('previewDate').innerText='Date: '+(document.getElementById('invoiceDate').value||'-');
+document.getElementById('submittedDate').innerText='Submitted on '+(document.getElementById('invoiceDate').value||'01/01/2000');
+}
+
+function addItem(){
+const date=document.getElementById('itemDate').value||'-';
+const name=document.getElementById('itemName').value;
+const qty=parseFloat(document.getElementById('itemQty').value)||0;
+const price=parseFloat(document.getElementById('itemPrice').value)||0;
+const remark=document.getElementById('itemRemark').value||'';
+if(!name) return;
+const total=qty*price;
+
+const row=document.createElement('div');
+row.className='preview-item';
+row.innerHTML=`<div>${date}</div><div>${name}</div><div>${qty}</div><div>${price}</div><div class="line-total">${total.toFixed(2)}</div><div>${remark}</div>`;
+
+const wrapper=document.createElement('div');
+wrapper.className='item-row';
+wrapper.innerHTML=`<div>${date}</div><div>${name}</div><div>${qty}</div><div>${price}</div><div>${total.toFixed(2)}</div><div>${remark}</div><button class="delete-btn" onclick="this.parentElement.remove(); syncPreview();">X</button>`;
+
+wrapper.dataset.previewId=Date.now();
+row.dataset.previewId=wrapper.dataset.previewId;
+
+document.getElementById('itemsContainer').appendChild(wrapper);
+document.getElementById('previewItems').appendChild(row);
+
+['itemDate','itemName','itemRemark'].forEach(id=>document.getElementById(id).value='');
+document.getElementById('itemQty').value=1;
+document.getElementById('itemPrice').value=0;
+calculateTotal();
+}
+
+function syncPreview(){
+const ids=[...document.querySelectorAll('#itemsContainer .item-row')].map(x=>x.dataset.previewId);
+document.querySelectorAll('#previewItems .preview-item').forEach(el=>{if(!ids.includes(el.dataset.previewId)) el.remove();});
+calculateTotal();
+}
+
+function calculateTotal(){
+let subtotal=0;
+document.querySelectorAll('.line-total').forEach(el=>subtotal+=parseFloat(el.innerText)||0);
+const grand=subtotal;
+const paid=0;
+const due=grand-paid;
+document.getElementById('previewSubtotal').innerText='Subtotal: '+subtotal.toFixed(2);
+document.getElementById('previewPaid').innerText='Paid: '+paid.toFixed(2);
+document.getElementById('previewDue').innerText='Due: '+due.toFixed(2);
+document.getElementById('previewGrandTotal').innerText='Grand Total: '+grand.toFixed(2);
+updatePreview();
+}
+
+document.addEventListener('input',updatePreview);
+window.addEventListener('load',updatePreview);
+</script>
+</body>
+</html>
